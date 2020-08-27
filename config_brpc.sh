@@ -1,6 +1,5 @@
 #!/usr/bin/env sh
 
-#
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -15,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
 SYSTEM=$(uname -s)
 if [ "$SYSTEM" = "Darwin" ]; then
@@ -321,7 +319,7 @@ if [ ! -z "$DEBUGSYMBOLS" ]; then
     CPPFLAGS="${CPPFLAGS} $DEBUGSYMBOLS"
 fi
 if [ "$SYSTEM" = "Darwin" ]; then
-    CPPFLAGS="${CPPFLAGS} -Wno-deprecated-declarations"
+    CPPFLAGS="${CPPFLAGS} -Wno-deprecated-declarations -Wno-inconsistent-missing-override"
     version=`sw_vers -productVersion | awk -F '.' '{print $1 "." $2}'`
     if [[ `echo "$version<10.12" | bc -l` == 1 ]]; then
         CPPFLAGS="${CPPFLAGS} -DNO_CLOCK_GETTIME_IN_MAC"

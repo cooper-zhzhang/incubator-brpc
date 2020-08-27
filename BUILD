@@ -1,4 +1,3 @@
-#
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -13,7 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
 licenses(["notice"])  # Apache v2
 
@@ -181,7 +179,6 @@ BUTIL_SRCS = [
     "src/butil/hash.cc",
     "src/butil/lazy_instance.cc",
     "src/butil/location.cc",
-    "src/butil/md5.cc",
     "src/butil/memory/aligned_memory.cc",
     "src/butil/memory/ref_counted.cc",
     "src/butil/memory/ref_counted_memory.cc",

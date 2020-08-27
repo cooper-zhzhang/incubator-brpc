@@ -15,7 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// Author: Ge,Jun (gejun@baidu.com)
 // Date: 2012-10-08 23:53:50
 
 // Merged chromium log and streaming log.
@@ -213,7 +212,7 @@ typedef char PathChar;
 // Where to record logging output? A flat file and/or system debug log
 // via OutputDebugString.
 enum LoggingDestination {
-    LOG_NONE                = 0,
+    LOG_TO_NONE             = 0,
     LOG_TO_FILE             = 1 << 0,
     LOG_TO_SYSTEM_DEBUG_LOG = 1 << 1,
 
