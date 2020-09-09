@@ -23,10 +23,15 @@
 #include <brpc/channel.h>
 #include <bthread/work_stealing_queue.h>
 #include <bthread/timer_thread.h>
+#include <bthread/bthread.h>
+
 #include <butil/resource_pool.h>
 #include <butil/resource_pool_inl.h>
+#include <butil/object_pool.h>
+#include <butil/object_pool_inl.h>
 
 DEFINE_int32(count, 1000, "Milliseconds between consecutive requests");
+DEFINE_int32(bthreadCount, 10, "b thread count");
 
 void WorkStealingQueue()
 {
@@ -38,7 +43,6 @@ void WorkStealingQueue()
     {
         que.push(i);
     }
-
 }
 
 void TimerFunc(void *p)
@@ -49,21 +53,21 @@ void TimerFunc(void *p)
 void TestTimerThread()
 {
     bthread::TimerThread *pTimerThread = bthread::get_or_create_global_timer_thread();
-    if(!pTimerThread)
+    if (!pTimerThread)
     {
         std::cout << "timer thread is null";
-        return ;
+        return;
     }
 
     std::cout << "start timer thread " << bthread::get_global_timer_thread()->thread_id() << std::endl;
 
     bthread::get_global_timer_thread()->schedule(
-            TimerFunc, NULL,
-            butil::microseconds_from_now(1 * 1000000L));
+        TimerFunc, NULL,
+        butil::microseconds_from_now(1 * 1000000L));
 
     pthread_t id = bthread::get_global_timer_thread()->thread_id();
 
-    std::cout << id << std::endl;// 不知道为什么取出来的全是0
+    std::cout << id << std::endl; // 不知道为什么取出来的全是0
 
     int joinRet = pthread_join(bthread::get_global_timer_thread()->thread_id(), NULL);
     std::cout << "join thread ret " << joinRet << std::endl;
@@ -83,16 +87,39 @@ void TestTimerThread()
     }
 
     std::cout << "timer thread id = " << timerThread.thread_id() << std::endl;*/
+}
 
+void ObjectPool()
+{
+
+    //butil::ObjectPool<int> id;
+
+    int *pValue = butil::get_object<int>();
+
+    if (pValue == nullptr)
+    {
+        std::cout << "get object<int> is null ptr" << std::endl;
+        return;
+    }
+
+    *pValue = 12;
+
+    int returnObjectResult = butil::return_object<long>((long *)pValue);
+    std::cout << "return object<long> pass int* ptr " << returnObjectResult << std::endl;
+
+    returnObjectResult = butil::return_object(pValue);
+
+    std::cout << "return object<int> pass int* ptr " << returnObjectResult << std::endl;
 }
 
 void ResourcePool()
 {
+    // 测试下在一个线程中使用了一个id 再返还资源 之后直接这个线程 看下这个线程的block是如何被别人使用的
 
     butil::ResourceId<int> id;
-    //template <typename T> inline T* 
-    int *pValue =  get_resource(&id, 1);
-    if(pValue == NULL)
+    //template <typename T> inline T*
+    int *pValue = get_resource(&id, 1);
+    if (pValue == NULL)
     {
         std::cout << "get_resource is null" << std::endl;
     }
@@ -103,31 +130,52 @@ void ResourcePool()
 
     pValue = address_resource(id);
 
+    return_resource(id);
 
-    //pValue =  get_resource(&id, 2);
-
-
-    if (pValue)
-    {
-        std::cout << " cur id is exists" << std::endl;
-    }
-    
     //ResourcePool<T>::singleton()->get_resource(id);
 }
 
-int main(int argc, char* argv[]) {
+void *ThreadFunc(void *arg)
+{
+    std::cout << "ThreadFunc is running " << std::endl;
+}
 
-    #ifdef TETST
+void BThread()
+{
+    //std::vector<bthread_t> bids;
+    bthread_t bid;
+
+    for (int i = 0; i < FLAGS_bthreadCount; i++)
+    {
+        if (0 == bthread_start_background(&bid, NULL, ThreadFunc, NULL))
+        {
+            bthread_join(bid, NULL);
+            std::cout << "bthread_join end bthread id " << bid << std::endl;
+        }
+        else
+        {
+            std::cout << " bthread_start_background  fail" << std::endl;
+        }
+    }
+}
+
+int main(int argc, char *argv[])
+{
+
+    google::ParseCommandLineFlags(&argc, &argv, true);
+
+#ifdef TETST
     WorkStealingQueue();
 
     TestTimerThread();
-    #endif
 
     ResourcePool();
 
+    ObjectPool();
 
+#endif
+
+    BThread();
 
     return 0;
 }
-
-
