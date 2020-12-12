@@ -18,7 +18,7 @@
 // bthread - A M:N threading library to make applications more concurrent.
 
 // Date: Sun Jul 13 15:04:18 CST 2014
-
+// 其本质可以看作是一个三维的数组
 #ifndef BUTIL_RESOURCE_POOL_INL_H
 #define BUTIL_RESOURCE_POOL_INL_H
 
@@ -90,14 +90,14 @@ static const size_t RP_INITIAL_FREE_LIST_SIZE = 1024;
 
 template <typename T>
 class ResourcePoolBlockItemNum {
-    static const size_t N1 = ResourcePoolBlockMaxSize<T>::value / sizeof(T);
-    static const size_t N2 = (N1 < 1 ? 1 : N1);
-public:
+    static const size_t N1 = ResourcePoolBlockMaxSize<T>::value / sizeof(T);// 根据使用的最大内存计算出可以存储多N1 个T类型的数据
+    static const size_t N2 = (N1 < 1 ? 1 : N1);// 将N1 转为N2
+public://value 表格存储的T类型数据的个数
     static const size_t value = (N2 > ResourcePoolBlockMaxItem<T>::value ?
-                                 ResourcePoolBlockMaxItem<T>::value : N2);
+                                 ResourcePoolBlockMaxItem<T>::value : N2);// 比较内存可以存储的数据和配置的最大存储个数进行比较 获取最小值
 };
 
-
+// resourcePool 内部数据结构全部对外屏蔽
 template <typename T>
 class BAIDU_CACHELINE_ALIGNMENT ResourcePool {
 public:
@@ -122,7 +122,7 @@ public:
     // A Resource addresses at most RP_MAX_BLOCK_NGROUP BlockGroups,
     // each BlockGroup addresses at most RP_GROUP_NBLOCK blocks. So a
     // resource addresses at most RP_MAX_BLOCK_NGROUP * RP_GROUP_NBLOCK Blocks.
-    struct BlockGroup {
+    struct BlockGroup {// 这是一个内存块组 
         butil::atomic<size_t> nblock;
         butil::atomic<Block*> blocks[RP_GROUP_NBLOCK];
 
@@ -150,7 +150,7 @@ public:
             if (_cur_free.nfree) {
                 _pool->push_free_chunk(_cur_free);
             }
-
+            // _cur_block 这个指针怎么处理呢 如果这个里面有内存还未被使用 将永远不会被使用了造成了内存泄漏
             _pool->clear_from_destructor_of_local_pool();
         }
 
@@ -223,7 +223,7 @@ public:
 #undef BAIDU_RESOURCE_POOL_GET
 
         inline int return_resource(ResourceId<T> id) {
-            // Return to local free list
+            // Return to local free list 回收这个id
             if (_cur_free.nfree < ResourcePool::free_chunk_nitem()) {
                 _cur_free.ids[_cur_free.nfree++] = id;
                 BAIDU_RESOURCE_POOL_FREE_ITEM_NUM_ADD1;
@@ -231,7 +231,7 @@ public:
             }
             // Local free list is full, return it to global.
             // For copying issue, check comment in upper get()
-            if (_pool->push_free_chunk(_cur_free)) {
+            if (_pool->push_free_chunk(_cur_free)) {// 把当前空位置全部返还给全局资源池
                 _cur_free.nfree = 1;
                 _cur_free.ids[0] = id;
                 BAIDU_RESOURCE_POOL_FREE_ITEM_NUM_ADD1;

@@ -31,7 +31,9 @@
 #include <butil/object_pool_inl.h>
 
 DEFINE_int32(count, 1000, "Milliseconds between consecutive requests");
-DEFINE_int32(bthreadCount, 10, "b thread count");
+DEFINE_int32(bthreadCount, 1, "b thread count");
+DEFINE_int32(main_thread_sleep_time, 5, "main_thread_sleep_time");
+//DECLARE_int32(bthread_min_concurrency);
 
 void WorkStealingQueue()
 {
@@ -72,21 +74,7 @@ void TestTimerThread()
     int joinRet = pthread_join(bthread::get_global_timer_thread()->thread_id(), NULL);
     std::cout << "join thread ret " << joinRet << std::endl;
 
-    //pTimerThread->stop_and_join();
-
-    //pthread_join(_thread, NULL);
     sleep(10);
-
-    /*
-    bthread::TimerThread timerThread;
-    int ret = timerThread.start(NULL);
-    if(ret != 0)
-    {
-        LOG_ASSERT(ret);
-        return; 
-    }
-
-    std::cout << "timer thread id = " << timerThread.thread_id() << std::endl;*/
 }
 
 void ObjectPool()
@@ -135,9 +123,22 @@ void ResourcePool()
     //ResourcePool<T>::singleton()->get_resource(id);
 }
 
+void BThread();
+
 void *ThreadFunc(void *arg)
 {
     std::cout << "ThreadFunc is running " << std::endl;
+
+    return NULL;
+}
+
+void* CreateThreadFunc(void*)
+{
+    bthread_t bid;
+    if (0 == bthread_start_background(&bid, NULL, ThreadFunc, NULL))
+    {
+        bthread_join(bid, NULL);
+    }
 }
 
 void BThread()
@@ -147,7 +148,7 @@ void BThread()
 
     for (int i = 0; i < FLAGS_bthreadCount; i++)
     {
-        if (0 == bthread_start_background(&bid, NULL, ThreadFunc, NULL))
+        if (0 == bthread_start_background(&bid, NULL, CreateThreadFunc, NULL))
         {
             bthread_join(bid, NULL);
             std::cout << "bthread_join end bthread id " << bid << std::endl;
@@ -159,10 +160,22 @@ void BThread()
     }
 }
 
+
+
+
+
+
 int main(int argc, char *argv[])
 {
 
-    google::ParseCommandLineFlags(&argc, &argv, true);
+    std::cout << "argc " << argc;
+    for(int i = 0; i < argc; ++i)
+    {
+        std::cout << argv[i] << std::endl;
+    }
+
+    google::AllowCommandLineReparsing();
+    google::ParseCommandLineFlags(&argc, &argv, false);
 
 #ifdef TETST
     WorkStealingQueue();
@@ -176,6 +189,14 @@ int main(int argc, char *argv[])
 #endif
 
     BThread();
+
+    while (!brpc::IsAskedToQuit()) 
+    {
+        sleep(FLAGS_main_thread_sleep_time);
+        std::cout << "main thread is sleep in " << FLAGS_main_thread_sleep_time << " s" << std::endl;
+    }
+
+    std::cout << "game over" << std::endl;
 
     return 0;
 }

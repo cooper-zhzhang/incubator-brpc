@@ -393,6 +393,7 @@ set(MCPACK2PB_SOURCES
     ${PROJECT_SOURCE_DIR}/src/mcpack2pb/parser.cpp
     ${PROJECT_SOURCE_DIR}/src/mcpack2pb/serializer.cpp)
 
+# 这个有意思
 include(CompileProto)
 set(PROTO_FILES idl_options.proto
                 brpc/rtmp.proto

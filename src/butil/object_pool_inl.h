@@ -144,7 +144,7 @@ public:
         // We need following macro to construct T with different CTOR_ARGS
         // which may include parenthesis because when T is POD, "new T()"
         // and "new T" are different: former one sets all fields to 0 which
-        // we don't want.
+        // we don't want. 注意区别 在_cur_free.nfree中获取数据不要进行new
 #define BAIDU_OBJECT_POOL_GET(CTOR_ARGS)                                \
         /* Fetch local free ptr */                                      \
         if (_cur_free.nfree) {                                          \

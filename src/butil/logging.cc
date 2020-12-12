@@ -731,7 +731,7 @@ inline LogStream* CreateLogStream(const PathChar* file, int line,
         stream = new LogStream;
         stream_array[slot] = stream;
     }
-    if (stream->empty()) {
+    if (stream->empty()) {//这会造成log展示的行号和文件不一致
         stream->SetPosition(file, line, severity);
     }
     return stream;

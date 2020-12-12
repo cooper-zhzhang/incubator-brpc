@@ -62,7 +62,7 @@ public:
 
     // Wakeup suspended wait() and make them unwaitable ever. 
     void stop() {
-        _pending_signal.fetch_or(1);
+        _pending_signal.fetch_or(1);// lsb设置为1
         futex_wake_private(&_pending_signal, 10000);
     }
 private:

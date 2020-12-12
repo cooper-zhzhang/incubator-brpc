@@ -149,7 +149,7 @@ void TaskGroup::run_main_task() {
     
     TaskGroup* dummy = this;
     bthread_t tid;
-    while (wait_task(&tid)) {
+    while (wait_task(&tid)) {// wait_task中必定有个阻塞 等待唤醒
         TaskGroup::sched_to(&dummy, tid);
         DCHECK_EQ(this, dummy);
         DCHECK_EQ(_cur_meta->stack, _main_stack);
@@ -327,7 +327,7 @@ void TaskGroup::task_runner(intptr_t skip_remained) {
         // is 0, change it to 1 to make bthread_t never be 0. Any access
         // or join to the bthread after changing version will be rejected.
         // The spinlock is for visibility of TaskGroup::get_attr.
-        {
+        {// 为什么是在这么位置进行自增版本号
             BAIDU_SCOPED_LOCK(m->version_lock);
             if (0 == ++*m->version_butex) {
                 ++*m->version_butex;
@@ -421,7 +421,7 @@ int TaskGroup::start_background(bthread_t* __restrict th,
     }
     const int64_t start_ns = butil::cpuwide_time_ns();
     const bthread_attr_t using_attr = (attr ? *attr : BTHREAD_ATTR_NORMAL);
-    butil::ResourceId<TaskMeta> slot;
+    butil::ResourceId<TaskMeta> slot;// slot 和m是一一对应的 组成的bthread_t 必须带一个版本的信息
     TaskMeta* m = butil::get_resource(&slot);
     if (__builtin_expect(!m, 0)) {
         return ENOMEM;
@@ -437,7 +437,7 @@ int TaskGroup::start_background(bthread_t* __restrict th,
     m->local_storage = LOCAL_STORAGE_INIT;
     m->cpuwide_start_ns = start_ns;
     m->stat = EMPTY_STAT;
-    m->tid = make_tid(*m->version_butex, slot);
+    m->tid = make_tid(*m->version_butex, slot);//这个比较有意思
     *th = m->tid;
     if (using_attr.flags & BTHREAD_LOG_START_AND_FINISH) {
         LOG(INFO) << "Started bthread " << m->tid;

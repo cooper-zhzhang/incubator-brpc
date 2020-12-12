@@ -93,7 +93,7 @@ static void make_thread_atexit_key() {
     }
     // If caller is not pthread, delete_thread_exit_helper will not be called.
     // We have to rely on atexit().
-    atexit(helper_exit_global);
+    atexit(helper_exit_global);// 在主线程中使用这个进行删除
 }
 
 detail::ThreadExitHelper* get_or_new_thread_exit_helper() {

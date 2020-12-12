@@ -69,13 +69,13 @@ public:
     // Returns true on pushed.
     // May run in parallel with steal().
     // Never run in parallel with pop() or another push().
-    bool push(const T& x) {
+    bool push(const T& x) {// 一个循环的队列
         const size_t b = _bottom.load(butil::memory_order_relaxed);
         const size_t t = _top.load(butil::memory_order_acquire);
-        if (b >= t + _capacity) { // Full queue.
+        if (b >= t + _capacity) { // Full queue. 两个下标之间的距离
             return false;
         }
-        _buffer[b & (_capacity - 1)] = x;
+        _buffer[b & (_capacity - 1)] = x; // 这个防止造成越界 相当于取余
         _bottom.store(b + 1, butil::memory_order_release);
         return true;
     }
@@ -117,18 +117,18 @@ public:
     bool steal(T* val) {
         size_t t = _top.load(butil::memory_order_acquire);
         size_t b = _bottom.load(butil::memory_order_acquire);
-        if (t >= b) {
+        if (t >= b) {// 没有数据
             // Permit false negative for performance considerations.
             return false;
         }
         do {
             butil::atomic_thread_fence(butil::memory_order_seq_cst);
             b = _bottom.load(butil::memory_order_acquire);
-            if (t >= b) {
+            if (t >= b) {// 在多线程的环境 再次取值
                 return false;
             }
             *val = _buffer[t & (_capacity - 1)];
-        } while (!_top.compare_exchange_strong(t, t + 1,
+        } while (!_top.compare_exchange_strong(t, t + 1,//原子比较并赋值 ces
                                                butil::memory_order_seq_cst,
                                                butil::memory_order_relaxed));
         return true;

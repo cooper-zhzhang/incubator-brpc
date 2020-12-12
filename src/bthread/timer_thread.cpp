@@ -231,11 +231,11 @@ TimerThread::TaskId TimerThread::schedule(
             BAIDU_SCOPED_LOCK(_mutex);
             if (run_time < _nearest_run_time) {
                 _nearest_run_time = run_time;
-                ++_nsignals;
+                ++_nsignals;// 进行自增 防止timer_thread进行睡眠
                 earlier = true;
             }
         }
-        if (earlier) {
+        if (earlier) {// 叫醒它
             futex_wake_private(&_nsignals, 1);
         }
     }
@@ -277,7 +277,7 @@ bool TimerThread::Task::run_and_delete() {
     // This CAS is rarely contended, should be fast.
     if (version.compare_exchange_strong(
             expected_version, id_version + 1, butil::memory_order_relaxed)) {
-        fn(arg);
+        fn(arg);// 这里最好添加一个异常的处理
         // The release fence is paired with acquire fence in
         // TimerThread::unschedule to make changes of fn(arg) visible.
         version.store(id_version + 2, butil::memory_order_release);
@@ -356,7 +356,7 @@ void TimerThread::run() {
                 // in case of the deletion of Task p which is unscheduled
                 Task* next_task = p->next;
 
-                if (!p->try_delete()) { // remove the task if it's unscheduled
+                if (!p->try_delete()) { // remove the task if it's unscheduled已经调用过了在这里负责删除
                     tasks.push_back(p);
                     std::push_heap(tasks.begin(), tasks.end(), task_greater);
                 }
@@ -382,7 +382,7 @@ void TimerThread::run() {
             // frequently, fortunately this is not true at most of time).
             {
                 BAIDU_SCOPED_LOCK(_mutex);
-                if (task1->run_time > _nearest_run_time) {
+                if (task1->run_time > _nearest_run_time) {//说明又有新的任务放在了bucket中 并且这个任务更早提前触发
                     // a task is earlier than task1. We need to check buckets.
                     pull_again = true;
                     break;
@@ -396,7 +396,7 @@ void TimerThread::run() {
         }
         if (pull_again) {
             BT_VLOG << "pull again, tasks=" << tasks.size();
-            continue;
+            continue;// 直接跳到循环的开头 再次pull task
         }
 
         // The realtime to wait for.
@@ -428,7 +428,7 @@ void TimerThread::run() {
             ptimeout = &next_timeout;
         }
         busy_seconds += (now - last_sleep_time) / 1000000.0;
-        futex_wait_private(&_nsignals, expected_nsignals, ptimeout);
+        futex_wait_private(&_nsignals, expected_nsignals, ptimeout);// 线程进入阻塞等待
         last_sleep_time = butil::gettimeofday_us();
     }
     BT_VLOG << "Ended TimerThread=" << pthread_self();

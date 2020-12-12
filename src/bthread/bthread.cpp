@@ -186,7 +186,7 @@ int bthread_start_background(bthread_t* __restrict tid,
                              void * (*fn)(void*),
                              void* __restrict arg) {
     bthread::TaskGroup* g = bthread::tls_task_group;
-    if (g) {
+    if (g) {// 在协程中开始一个新的协程
         // start from worker
         return g->start_background<false>(tid, attr, fn, arg);
     }
